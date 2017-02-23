@@ -26,7 +26,6 @@ services:
 
 before_install:
   - echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - pecl install mysqli
 
 install:
   - composer install
