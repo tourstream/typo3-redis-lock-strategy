@@ -18,6 +18,8 @@ class RedisLockStrategyTest extends FunctionalTestCase
      * @var LockFactory
      */
     private $lockFactory;
+    private $redisHost;
+    private $redisDatabase;
 
     /**
      * @test
@@ -47,8 +49,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function should_throw_exception_because_config_has_no_host()
     {
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-        ];
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [];
 
         $this->lockFactory->createLocker('test');
     }
@@ -61,7 +62,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
     public function should_throw_exception_because_config_has_no_database()
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-             'host' => 'redis'
+            'host' => $this->redisHost,
         ];
 
         $this->lockFactory->createLocker('test');
@@ -75,18 +76,30 @@ class RedisLockStrategyTest extends FunctionalTestCase
         $id = uniqid();
 
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host' => '192.168.0.101',
-            'port' => 6379,
-            'database' => 7
+            'host'     => $this->redisHost,
+            'port'     => 6379,
+            'database' => $this->redisDatabase,
         ];
 
-        $locker =$this->lockFactory->createLocker($id);
+        $locker = $this->lockFactory->createLocker($id);
 
         $redis = $this->getRedisClient();
 
         $redis->set($id, 'testvalue');
 
         self::assertTrue($locker->acquire());
+    }
+
+    /**
+     * @return \Redis
+     */
+    private function getRedisClient()
+    {
+        $redis = new \Redis();
+        $redis->connect($this->redisHost);
+        $redis->select($this->redisDatabase);
+
+        return $redis;
     }
 
     /**
@@ -97,12 +110,12 @@ class RedisLockStrategyTest extends FunctionalTestCase
         $id = uniqid();
 
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host' => '192.168.0.101',
-            'port' => 6379,
-            'database' => 7
+            'host'     => $this->redisHost,
+            'port'     => 6379,
+            'database' => $this->redisDatabase,
         ];
 
-        $locker =$this->lockFactory->createLocker($id);
+        $locker = $this->lockFactory->createLocker($id);
 
         self::assertTrue($locker->acquire());
 
@@ -119,12 +132,12 @@ class RedisLockStrategyTest extends FunctionalTestCase
         $id = uniqid();
 
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host' => '192.168.0.101',
-            'port' => 6379,
-            'database' => 7
+            'host'     => $this->redisHost,
+            'port'     => 6379,
+            'database' => $this->redisDatabase,
         ];
 
-        $locker =$this->lockFactory->createLocker($id);
+        $locker = $this->lockFactory->createLocker($id);
 
         $redis = $this->getRedisClient();
 
@@ -141,12 +154,12 @@ class RedisLockStrategyTest extends FunctionalTestCase
         $id = uniqid();
 
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host' => '192.168.0.101',
-            'port' => 6379,
-            'database' => 7
+            'host'     => $this->redisHost,
+            'port'     => 6379,
+            'database' => $this->redisDatabase,
         ];
 
-        $locker =$this->lockFactory->createLocker($id);
+        $locker = $this->lockFactory->createLocker($id);
 
         $redis = $this->getRedisClient();
 
@@ -165,12 +178,12 @@ class RedisLockStrategyTest extends FunctionalTestCase
         $id = uniqid();
 
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host' => '192.168.0.101',
-            'port' => 6379,
-            'database' => 7
+            'host'     => $this->redisHost,
+            'port'     => 6379,
+            'database' => $this->redisDatabase,
         ];
 
-        $locker =$this->lockFactory->createLocker($id);
+        $locker = $this->lockFactory->createLocker($id);
 
         $redis = $this->getRedisClient();
 
@@ -179,21 +192,11 @@ class RedisLockStrategyTest extends FunctionalTestCase
         self::assertFalse($redis->exists($id));
     }
 
-    /**
-     * @return \Redis
-     */
-    private function getRedisClient()
-    {
-        $redis = new \Redis();
-        $redis->connect('192.168.0.101');
-        $redis->select(7);
-
-        return $redis;
-    }
-
     protected function setUp()
     {
         $this->testExtensionsToLoad[] = 'typo3conf/ext/redis_lock_strategy';
+        $this->redisHost = getenv('typo3RedisHost');
+        $this->redisDatabase = getenv('typo3RedisDatabase');
 
         parent::setUp();
 
