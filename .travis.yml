@@ -20,8 +20,8 @@ services:
   - mysql
 
 before_install:
-  - echo extension = redis.so >> $INI_FILE
-  - echo extension = mysql.so >> $INI_FILE
+  - echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - echo "extension = mysqli.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 install:
   - composer install
