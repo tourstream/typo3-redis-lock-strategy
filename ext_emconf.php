@@ -1,0 +1,39 @@
+<?php
+
+/***************************************************************
+ * Extension Manager/Repository config file for ext "replacecontent".
+ *
+ * Auto generated 25-04-2016 18:05
+ *
+ * Manual updates:
+ * Only the data in the array - everything else is removed by next
+ * writing. "version" and "dependencies" must not be touched!
+ ***************************************************************/
+
+$EM_CONF[$_EXTKEY] = array (
+	'title' => 'Tourstrean Cache Control',
+	'description' => '',
+	'category' => 'fe',
+	'version' => '1.0.0',
+	'state' => 'stable',
+	'uploadfolder' => false,
+	'createDirs' => NULL,
+	'clearcacheonload' => false,
+	'author' => 'Alexander Miehe',
+	'author_email' => 'alexander.miehe@tourstream.eu',
+	'author_company' => NULL,
+	'constraints' => 
+	array (
+		'depends' => 
+		array (
+			'typo3' => '7.6.0-7.99.99',
+		),
+		'conflicts' => 
+		array (
+		),
+		'suggests' => 
+		array (
+		),
+	),
+);
+

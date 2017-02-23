@@ -1,0 +1,54 @@
+{
+    "name": "tourstream/typo3-redis-lock-strategy",
+    "type": "typo3-cms-extension",
+    "license": "GPL-3.0+",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "Alexander Miehe",
+            "email": "alexander.miehe@tourstream.eu"
+        }
+    ],
+    "require": {
+        "typo3/cms": "^7.6.0",
+        "php": "^5.6|^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.7"
+    },
+    "replace": {
+        "redis_lock_strategy": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tourstream\\RedisLockStrategy\\": "Classes"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tourstream\\RedisLockStrategy\\Tests\\": "Tests/",
+            "TYPO3\\CMS\\Core\\Tests\\": ".Build/vendor/typo3/cms/typo3/sysext/core/Tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "mkdir -p .Build/Web/typo3conf/ext/",
+            "[ -L .Build/Web/typo3conf/ext/redis_lock_strategy ] || ln -snvf ../../../../. .Build/Web/typo3conf/ext/redis_lock_strategy"
+        ],
+        "test": "export TYPO3_PATH_WEB=`pwd`/.Build/Web;export typo3DatabaseName='lock';export typo3DatabasePort=4306; export typo3DatabaseHost='192.168.0.101'; export typo3DatabaseUsername='root'; export typo3DatabasePassword='root'; .Build/bin/phpunit --coverage-html=.Build/coverage"
+    },
+    "config": {
+        "vendor-dir": ".Build/vendor",
+        "bin-dir": ".Build/bin",
+        "preferred-install": {
+            "typo3/cms": "source",
+            "*": "dist"
+        }
+    },
+    "extra": {
+        "typo3/cms": {
+            "cms-package-dir": "{$vendor-dir}/typo3/cms",
+            "web-dir": ".Build/Web"
+        }
+    }
+}
