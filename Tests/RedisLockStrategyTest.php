@@ -53,7 +53,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
      * @expectedException \TYPO3\CMS\Core\Locking\Exception
      * @expectedExceptionMessage no configuration for redis lock strategy found
      */
-    public function should_throw_exception_because_config_is_missing()
+    public function shouldThrowExceptionBecauseConfigIsMissing()
     {
         $this->lockFactory->createLocker('test');
     }
@@ -63,7 +63,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
      * @expectedException \TYPO3\CMS\Core\Locking\Exception
      * @expectedExceptionMessage no configuration for redis lock strategy found
      */
-    public function should_throw_exception_because_config_is_not_an_array()
+    public function shouldThrowExceptionBecauseConfigIsNotAnArray()
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = 'test';
         $this->lockFactory->createLocker('test');
@@ -74,7 +74,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
      * @expectedException \TYPO3\CMS\Core\Locking\Exception
      * @expectedExceptionMessage no host for redis lock strategy found
      */
-    public function should_throw_exception_because_config_has_no_host()
+    public function shouldThrowExceptionBecauseConfigHasNoHost()
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [];
 
@@ -86,7 +86,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
      * @expectedException \TYPO3\CMS\Core\Locking\Exception
      * @expectedExceptionMessage no database for redis lock strategy found
      */
-    public function should_throw_exception_because_config_has_no_database()
+    public function shouldThrowExceptionBecauseConfigHasNoDatabase()
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
             'host' => $this->redisHost,
@@ -98,7 +98,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function should_connect_and_acquire_a_lock()
+    public function shouldConnectAndAcquireALock()
     {
         $id = uniqid();
 
@@ -117,22 +117,11 @@ class RedisLockStrategyTest extends FunctionalTestCase
         self::assertTrue($locker->acquire());
     }
 
-    /**
-     * @return \Redis
-     */
-    private function getRedisClient()
-    {
-        $redis = new \Redis();
-        $redis->connect($this->redisHost);
-        $redis->select($this->redisDatabase);
-
-        return $redis;
-    }
 
     /**
      * @test
      */
-    public function should_connect_and_acquire_a_existing_lock()
+    public function shouldConnectAndAcquireAExistingLock()
     {
         $id = uniqid();
 
@@ -154,7 +143,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function should_connect_and_check_if_lock_is_acquired()
+    public function shouldConnectAndCheckIfLockIsAcquired()
     {
         $id = uniqid();
 
@@ -176,7 +165,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function should_connect_and_destroy_a_lock()
+    public function shouldConnectAndDestroyALock()
     {
         $id = uniqid();
 
@@ -200,7 +189,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function should_connect_and_destroy_a_not_existing_lock()
+    public function shouldConnectAndDestroyANotExistingLock()
     {
         $id = uniqid();
 
@@ -222,8 +211,8 @@ class RedisLockStrategyTest extends FunctionalTestCase
     protected function setUp()
     {
         $this->testExtensionsToLoad[] = 'typo3conf/ext/redis_lock_strategy';
-        $this->redisHost = getenv('typo3RedisHost');
-        $this->redisDatabase = getenv('typo3RedisDatabase');
+        $this->redisHost              = getenv('typo3RedisHost');
+        $this->redisDatabase          = getenv('typo3RedisDatabase');
 
         parent::setUp();
 
@@ -236,4 +225,17 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
         $this->getRedisClient()->flushDB();
     }
+
+    /**
+     * @return \Redis
+     */
+    private function getRedisClient()
+    {
+        $redis = new \Redis();
+        $redis->connect($this->redisHost);
+        $redis->select($this->redisDatabase);
+
+        return $redis;
+    }
+
 }

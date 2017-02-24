@@ -87,7 +87,7 @@ class RedisLockStrategy implements LockingStrategyInterface
         }
 
         $this->subject = $subject;
-        $this->redis = new \Redis();
+        $this->redis   = new \Redis();
         $this->redis->connect($config['host'], $port);
 
         if (\array_key_exists('auth', $config)) {
