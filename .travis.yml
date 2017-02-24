@@ -16,7 +16,6 @@ env:
     typo3RedisHost=localhost
     typo3RedisDatabase=1
 
-
 services:
   - redis-server
   - mysql
@@ -26,4 +25,10 @@ before_install:
 
 install:
   - composer install
-  - .Build/bin/phpunit
+
+script:
+  - .Build/bin/phpunit --coverage-clover=coverage.clover
+
+after_script:
+    - wget https://scrutinizer-ci.com/ocular.phar
+    - php ocular.phar code-coverage:upload --format=php-clover coverage.clover
