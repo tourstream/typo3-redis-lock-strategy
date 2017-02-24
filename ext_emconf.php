@@ -10,30 +10,30 @@
  * writing. "version" and "dependencies" must not be touched!
  ***************************************************************/
 
-$EM_CONF[$_EXTKEY] = array (
-	'title' => 'Tourstrean Redis Lock Strategy',
-	'description' => 'Set a Lock Strategy for Redis with priority 100',
-	'category' => 'fe',
-	'version' => '1.0.0',
-	'state' => 'stable',
-	'uploadfolder' => false,
-	'createDirs' => NULL,
-	'clearcacheonload' => false,
-	'author' => 'Alexander Miehe',
-	'author_email' => 'alexander.miehe@tourstream.eu',
-	'author_company' => NULL,
-	'constraints' => 
-	array (
-		'depends' => 
-		array (
-			'typo3' => '7.6.0-7.99.99',
-		),
-		'conflicts' => 
-		array (
-		),
-		'suggests' => 
-		array (
-		),
-	),
-);
+$EM_CONF[$_EXTKEY] = [
+    'title'            => 'Tourstrean Redis Lock Strategy',
+    'description'      => 'Set a Lock Strategy for Redis with priority 100',
+    'category'         => 'fe',
+    'version'          => '1.0.0',
+    'state'            => 'stable',
+    'uploadfolder'     => false,
+    'createDirs'       => null,
+    'clearcacheonload' => false,
+    'author'           => 'Alexander Miehe',
+    'author_email'     => 'alexander.miehe@tourstream.eu',
+    'author_company'   => null,
+    'constraints'      =>
+        [
+            'depends'   =>
+                [
+                    'typo3' => '7.6.0-7.99.99',
+                ],
+            'conflicts' =>
+                [
+                ],
+            'suggests'  =>
+                [
+                ],
+        ],
+];
 

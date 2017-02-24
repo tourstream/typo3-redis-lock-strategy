@@ -74,7 +74,7 @@ class RedisLockStrategy implements LockingStrategyInterface
         $port = 6379;
 
         if (\array_key_exists('port', $config)) {
-            $port = (int)$config['port'];
+            $port = (int) $config['port'];
         }
 
         if (!\array_key_exists('database', $config)) {
@@ -83,7 +83,7 @@ class RedisLockStrategy implements LockingStrategyInterface
 
         $this->ttl = 360;
         if (\array_key_exists('ttl', $config)) {
-            $this->ttl = (int)$config['ttl'];
+            $this->ttl = (int) $config['ttl'];
         }
 
         $this->subject = $subject;
@@ -94,7 +94,7 @@ class RedisLockStrategy implements LockingStrategyInterface
             $this->redis->auth($config['auth']);
         }
 
-        $this->redis->select((int)$config['database']);
+        $this->redis->select((int) $config['database']);
     }
 
     /**
