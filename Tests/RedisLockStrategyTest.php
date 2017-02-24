@@ -98,17 +98,11 @@ class RedisLockStrategyTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function shouldConnectAndAcquireALock()
+    public function shouldConnectAndAcquireAExistingLock()
     {
         $id = uniqid();
 
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host'     => $this->redisHost,
-            'port'     => 6379,
-            'database' => $this->redisDatabase,
-        ];
-
-        $locker = $this->lockFactory->createLocker($id);
+        $locker = $this->getLocker($id);
 
         $redis = $this->getRedisClient();
 
@@ -121,17 +115,11 @@ class RedisLockStrategyTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function shouldConnectAndAcquireAExistingLock()
+    public function shouldConnectAndAcquireALock()
     {
         $id = uniqid();
 
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host'     => $this->redisHost,
-            'port'     => 6379,
-            'database' => $this->redisDatabase,
-        ];
-
-        $locker = $this->lockFactory->createLocker($id);
+        $locker = $this->getLocker($id);
 
         self::assertTrue($locker->acquire());
 
@@ -145,15 +133,10 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndCheckIfLockIsAcquired()
     {
+
         $id = uniqid();
 
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host'     => $this->redisHost,
-            'port'     => 6379,
-            'database' => $this->redisDatabase,
-        ];
-
-        $locker = $this->lockFactory->createLocker($id);
+        $locker = $this->getLocker($id);
 
         $redis = $this->getRedisClient();
 
@@ -169,13 +152,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
     {
         $id = uniqid();
 
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host'     => $this->redisHost,
-            'port'     => 6379,
-            'database' => $this->redisDatabase,
-        ];
-
-        $locker = $this->lockFactory->createLocker($id);
+        $locker = $this->getLocker($id);
 
         $redis = $this->getRedisClient();
 
@@ -193,13 +170,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
     {
         $id = uniqid();
 
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
-            'host'     => $this->redisHost,
-            'port'     => 6379,
-            'database' => $this->redisDatabase,
-        ];
-
-        $locker = $this->lockFactory->createLocker($id);
+        $locker = $this->getLocker($id);
 
         $redis = $this->getRedisClient();
 
@@ -236,6 +207,22 @@ class RedisLockStrategyTest extends FunctionalTestCase
         $redis->select($this->redisDatabase);
 
         return $redis;
+    }
+
+    /**
+     * @param string $id Locker id
+     *
+     * @return \TYPO3\CMS\Core\Locking\LockingStrategyInterface
+     */
+    private function getLocker($id)
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
+            'host'     => $this->redisHost,
+            'port'     => 6379,
+            'database' => $this->redisDatabase,
+        ];
+
+        return $this->lockFactory->createLocker($id);
     }
 
 }
