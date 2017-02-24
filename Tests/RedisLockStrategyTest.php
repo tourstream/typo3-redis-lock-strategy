@@ -201,7 +201,6 @@ class RedisLockStrategyTest extends FunctionalTestCase
         parent::setUp();
 
         $this->lockFactory = GeneralUtility::makeInstance(LockFactory::class);
-        $this->lockFactory->addLockingStrategy(RedisLockStrategy::class);
     }
 
     protected function tearDown()

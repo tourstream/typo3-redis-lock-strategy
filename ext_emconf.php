@@ -1,7 +1,7 @@
 <?php
 
 /***************************************************************
- * Extension Manager/Repository config file for ext "replacecontent".
+ * Extension Manager/Repository config file for ext "redis_lock_strategy".
  *
  * Auto generated 25-04-2016 18:05
  *
@@ -11,8 +11,8 @@
  ***************************************************************/
 
 $EM_CONF[$_EXTKEY] = array (
-	'title' => 'Tourstrean Cache Control',
-	'description' => '',
+	'title' => 'Tourstrean Redis Lock Strategy',
+	'description' => 'Set a Lock Strategy for Redis with priority 100',
 	'category' => 'fe',
 	'version' => '1.0.0',
 	'state' => 'stable',
