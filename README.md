@@ -1,1 +1,2 @@
 [Master image]: https://img.shields.io/travis/tourstream/typo3-redis-lock-strategy/master.svg?style=flat-square
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/tourstream/typo3-redis-lock-strategy/badges/quality-score.png?b=redis_lock)](https://scrutinizer-ci.com/g/tourstream/typo3-redis-lock-strategy/?branch=redis_lock)
