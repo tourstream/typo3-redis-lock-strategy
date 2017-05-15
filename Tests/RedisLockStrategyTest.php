@@ -31,8 +31,8 @@ namespace Tourstream\RedisLockStrategy\Tests;
  ***************************************************************/
 
 use TYPO3\CMS\Core\Locking\LockFactory;
-use TYPO3\CMS\Core\Tests\FunctionalTestCase;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * @author Alexander Miehe <alexander.miehe@tourstream.eu>
