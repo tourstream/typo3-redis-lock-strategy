@@ -22,6 +22,7 @@ The recommended way to install the extension is by using [Composer][composer-url
 
 	composer require tourstream/typo3-redis-lock-strategy 
 
+This extension uses the pecl extension [redis][redis-pecl-url].
 
 ## Usage
 
@@ -52,3 +53,5 @@ The recommended way to install the extension is by using [Composer][composer-url
 [license-url]: https://github.com/tourstream/typo3-redis-lock-strategy/blob/master/LICENSE
 
 [composer-url]: https://getcomposer.org
+
+[redis-pecl-url]: https://pecl.php.net/package/redis
