@@ -32,6 +32,7 @@ namespace Tourstream\RedisLockStrategy;
 
 use TYPO3\CMS\Core\Locking\Exception\LockAcquireException;
 use TYPO3\CMS\Core\Locking\Exception\LockCreateException;
+use TYPO3\CMS\Core\Locking\Exception\LockAcquireWouldBlockException;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
 /**
@@ -40,12 +41,12 @@ use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 class RedisLockStrategy implements LockingStrategyInterface
 {
     /**
-     * @var \Redis
+     * @var \Redis A key-value data store
      */
     private $redis;
 
     /**
-     * @var string
+     * @var string The locking subject, i.e. the string to discriminate a lock
      */
     private $subject;
 
@@ -62,7 +63,7 @@ class RedisLockStrategy implements LockingStrategyInterface
     /**
      * @var int Seconds to wait for a lock
      */
-    private $blTo = 30;
+    private $blTo = 60;
 
     /**
      * @inheritdoc
@@ -199,7 +200,5 @@ class RedisLockStrategy implements LockingStrategyInterface
 
         return !$this->isAcquired;
     }
-
-
 
 }

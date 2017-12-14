@@ -18,7 +18,7 @@ cache:
 
 env:
   global:
-    TYPO3_PATH_WEB=`pwd`/.Build/Web
+    TYPO3_PATH_WEB=$TRAVIS_BUILD_DIR/.Build/Web
     typo3DatabaseName=lock
     typo3DatabaseHost=localhost
     typo3DatabaseUsername=root
