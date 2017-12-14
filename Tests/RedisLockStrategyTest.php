@@ -100,13 +100,9 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndAcquireAExistingLock()
     {
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
-
-        $redis = $this->getRedisClient();
-
-        $redis->set($id, 'testvalue');
+        $locker = $this->getLocker($subject);
 
         self::assertTrue($locker->acquire());
     }
@@ -117,15 +113,15 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndAcquireALock()
     {
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
+        $locker = $this->getLocker($subject);
 
         self::assertTrue($locker->acquire());
 
         $redis = $this->getRedisClient();
 
-        self::assertTrue($redis->exists($id));
+        self::assertTrue($redis->exists($subject));
     }
 
     /**
@@ -134,13 +130,11 @@ class RedisLockStrategyTest extends FunctionalTestCase
     public function shouldConnectAndCheckIfLockIsAcquired()
     {
 
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
+        $locker = $this->getLocker($subject);
 
-        $redis = $this->getRedisClient();
-
-        $redis->set($id, 'testvalue');
+        $locker->acquire();
 
         self::assertTrue($locker->isAcquired());
     }
@@ -150,17 +144,17 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndDestroyALock()
     {
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
+        $locker = $this->getLocker($subject);
 
         $redis = $this->getRedisClient();
 
-        $redis->set($id, 'testvalue');
+        $redis->set($subject, 'testvalue');
 
         $locker->destroy();
 
-        self::assertFalse($redis->exists($id));
+        self::assertFalse($redis->exists($subject));
     }
 
     /**
@@ -168,15 +162,15 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndDestroyANotExistingLock()
     {
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
+        $locker = $this->getLocker($subject);
 
         $redis = $this->getRedisClient();
 
         $locker->destroy();
 
-        self::assertFalse($redis->exists($id));
+        self::assertFalse($redis->exists($subject));
     }
 
     protected function setUp()

@@ -144,12 +144,10 @@ class RedisLockStrategy implements LockingStrategyInterface
 
             // this does not block
             $this->isAcquired = (bool) $this->redis->lPop($this->subject, $this->blTo);
-
         } else {
 
             // this blocks iff the list is empty
             $this->isAcquired = (bool) $this->redis->blPop([$this->subject], $this->blTo);
-
         }
 
         return $this->isAcquired;
