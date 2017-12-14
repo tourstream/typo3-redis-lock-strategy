@@ -30,7 +30,8 @@ namespace Tourstream\RedisLockStrategy;
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
-use TYPO3\CMS\Core\Locking\Exception;
+use TYPO3\CMS\Core\Locking\Exception\LockAcquireException;
+use TYPO3\CMS\Core\Locking\Exception\LockCreateException;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
 /**
@@ -49,19 +50,19 @@ class RedisLockStrategy implements LockingStrategyInterface
     private $subject;
 
     /**
-     * @var int Seconds the lock remains persistent
-     */
-    private $ttl = 3600;
-
-    /**
      * @var boolean TRUE if lock is acquired
      */
     private $isAcquired = false;
 
     /**
+     * @var int Seconds the lock remains persistent
+     */
+    private $ttl = 3600;
+
+    /**
      * @var int Seconds to wait for a lock
      */
-    private $blTo = 60;
+    private $blTo = 30;
 
     /**
      * @inheritdoc
@@ -75,11 +76,11 @@ class RedisLockStrategy implements LockingStrategyInterface
         }
 
         if (!\is_array($config)) {
-            throw new Exception('no configuration for redis lock strategy found');
+            throw new LockCreateException('no configuration for redis lock strategy found');
         }
 
         if (!\array_key_exists('host', $config)) {
-            throw new Exception('no host for redis lock strategy found');
+            throw new LockCreateException('no host for redis lock strategy found');
         }
         $port = 6379;
 
@@ -88,10 +89,9 @@ class RedisLockStrategy implements LockingStrategyInterface
         }
 
         if (!\array_key_exists('database', $config)) {
-            throw new Exception('no database for redis lock strategy found');
+            throw new LockCreateException('no database for redis lock strategy found');
         }
 
-        $this->ttl = 360;
         if (\array_key_exists('ttl', $config)) {
             $this->ttl = (int) $config['ttl'];
         }
@@ -110,8 +110,13 @@ class RedisLockStrategy implements LockingStrategyInterface
 
             // initialize synchronization object,
             // i.e. a simple list with some single random value
-            $this->redis->rPush($this->subject, uniqid());
-            $this->redis->expire($this->subject, $this->ttl);
+            if (!$this->redis->rPush($this->subject, uniqid())) {
+                throw new LockCreateException('could not create lock entry');
+            }
+
+            if (!$this->redis->expire($this->subject, $this->ttl)) {
+                throw new LockCreateException('could not set ttl to lock entry');
+            }
         }
     }
 
@@ -140,17 +145,29 @@ class RedisLockStrategy implements LockingStrategyInterface
             return true;
         }
 
+        if (!$this->redis->exists($this->subject)) {
+            throw new LockAcquireException('lock entry could not be found');
+        }
+
         if ($mode & self::LOCK_CAPABILITY_NOBLOCK) {
 
             // this does not block
-            $this->isAcquired = (bool) $this->redis->lPop($this->subject, $this->blTo);
+            $this->isAcquired = (bool) $this->redis->lPop($this->subject);
+
+            if (!$this->isAcquired) {
+                throw new LockAcquireWouldBlockException('could not acquire lock');
+            }
         } else {
 
             // this blocks iff the list is empty
             $this->isAcquired = (bool) $this->redis->blPop([$this->subject], $this->blTo);
+
+            if (!$this->isAcquired) {
+                throw new LockAcquireException('could not acquire lock');
+            }
         }
 
-        return $this->isAcquired;
+        return true;
     }
 
     /**
@@ -166,7 +183,6 @@ class RedisLockStrategy implements LockingStrategyInterface
      */
     public function destroy()
     {
-        $this->release();
         $this->redis->del($this->subject);
     }
 
@@ -183,5 +199,7 @@ class RedisLockStrategy implements LockingStrategyInterface
 
         return !$this->isAcquired;
     }
+
+
 
 }

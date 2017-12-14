@@ -50,7 +50,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no configuration for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigIsMissing()
@@ -60,7 +60,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no configuration for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigIsNotAnArray()
@@ -71,7 +71,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no host for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigHasNoHost()
@@ -83,7 +83,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no database for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigHasNoDatabase()
@@ -117,11 +117,11 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
         $locker = $this->getLocker($subject);
 
-        self::assertTrue($locker->acquire());
-
         $redis = $this->getRedisClient();
 
         self::assertTrue($redis->exists($subject));
+
+        self::assertTrue($locker->acquire());
     }
 
     /**
@@ -129,7 +129,6 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndCheckIfLockIsAcquired()
     {
-
         $subject = uniqid();
 
         $locker = $this->getLocker($subject);
