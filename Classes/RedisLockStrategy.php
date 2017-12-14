@@ -46,7 +46,7 @@ class RedisLockStrategy implements LockingStrategyInterface
     private $redis;
 
     /**
-     * @var string The locking subject, i.e. the string to discriminate a lock
+     * @var string The locking subject, i.e. a string to discriminate the lock
      */
     private $subject;
 
@@ -108,16 +108,7 @@ class RedisLockStrategy implements LockingStrategyInterface
         $this->redis->select((int) $config['database']);
 
         if (!$this->redis->exists($this->subject)) {
-
-            // initialize synchronization object,
-            // i.e. a simple list with some single random value
-            if (!$this->redis->rPush($this->subject, uniqid())) {
-                throw new LockCreateException('could not create lock entry');
-            }
-
-            if (!$this->redis->expire($this->subject, $this->ttl)) {
-                throw new LockCreateException('could not set ttl to lock entry');
-            }
+            $this->create();
         }
     }
 
@@ -146,26 +137,28 @@ class RedisLockStrategy implements LockingStrategyInterface
             return true;
         }
 
-        if (!$this->redis->exists($this->subject)) {
-            throw new LockAcquireException('lock entry could not be found');
-        }
+        if ($mode & self::LOCK_CAPABILITY_EXCLUSIVE) {
 
-        if ($mode & self::LOCK_CAPABILITY_NOBLOCK) {
+            if ($mode & self::LOCK_CAPABILITY_NOBLOCK) {
 
-            // this does not block
-            $this->isAcquired = (bool) $this->redis->lPop($this->subject);
+                // this does not block
+                $this->isAcquired = (bool) $this->redis->lPop($this->subject);
 
-            if (!$this->isAcquired) {
-                throw new LockAcquireWouldBlockException('could not acquire lock');
+                if (!$this->isAcquired) {
+                    throw new LockAcquireWouldBlockException('could not acquire lock');
+                }
+            } else {
+
+                // this blocks iff the list is empty
+                $this->isAcquired = (bool) $this->redis->blPop([$this->subject], $this->blTo);
+
+                if (!$this->isAcquired) {
+                    throw new LockAcquireException('could not acquire lock');
+                }
             }
+
         } else {
-
-            // this blocks iff the list is empty
-            $this->isAcquired = (bool) $this->redis->blPop([$this->subject], $this->blTo);
-
-            if (!$this->isAcquired) {
-                throw new LockAcquireException('could not acquire lock');
-            }
+            throw new LockAcquireException('insufficient capabilities');
         }
 
         return true;
@@ -196,9 +189,29 @@ class RedisLockStrategy implements LockingStrategyInterface
             return true;
         }
 
-        $this->isAcquired = !$this->redis->rPush($this->subject, uniqid());
+        $this->isAcquired = !$this->create();
 
         return !$this->isAcquired;
+    }
+
+    /**
+     * create synchronization object, i.e.
+     * a simple list with some single random value
+     *
+     * @return boolean TRUE on success
+     * @throws LockCreateException
+     */
+    private function create()
+    {
+        if (!$this->redis->rPush($this->subject, uniqid())) {
+            throw new LockCreateException('could not create lock entry');
+        }
+
+        if (!$this->redis->expire($this->subject, $this->ttl)) {
+            throw new LockCreateException('could not set ttl to lock entry');
+        }
+
+        return true;
     }
 
 }

@@ -31,6 +31,7 @@ namespace Tourstream\RedisLockStrategy\Tests;
  ***************************************************************/
 
 use TYPO3\CMS\Core\Locking\LockFactory;
+use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -170,6 +171,73 @@ class RedisLockStrategyTest extends FunctionalTestCase
         $locker->destroy();
 
         self::assertFalse($redis->exists($subject));
+    }
+
+    /**
+     * @test
+     */
+    public function shouldAcquireNonBlockingAndReleaseMoreLocks()
+    {
+        $subject = uniqid();
+        $capabilities = LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE | LockingStrategyInterface::LOCK_CAPABILITY_NOBLOCK;
+        $redis = $this->getRedisClient();
+
+        $locker1 = $this->getLocker($subject);
+        $locker2 = $this->getLocker($subject);
+        $locker3 = $this->getLocker($subject);
+
+        self::assertEquals(1, $redis->llen($subject));
+
+        self::assertTrue($locker1->acquire($capabilities));
+        self::expectException('\TYPO3\CMS\Core\Locking\Exception\LockAcquireWouldBlockException') && $locker2->acquire($capabilities);
+        self::expectException('\TYPO3\CMS\Core\Locking\Exception\LockAcquireWouldBlockException') && $locker3->acquire($capabilities);
+
+        self::assertEquals(0, $redis->llen($subject));
+        self::assertTrue($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker1->release());
+
+        self::assertEquals(1, $redis->llen($subject));
+        self::assertFalse($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker2->acquire($capabilities));
+
+        self::assertEquals(0, $redis->llen($subject));
+        self::assertFalse($locker1->isAcquired());
+        self::assertTrue($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker3->release());
+
+        self::assertEquals(0, $redis->llen($subject));
+        self::assertFalse($locker1->isAcquired());
+        self::assertTrue($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker1->acquire($capabilities));
+
+        self::assertEquals(0, $redis->llen($subject));
+        self::assertTrue($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertTrue($locker3->isAcquired());
+
+        self::assertTrue($locker2->release());
+
+        self::assertEquals(0, $redis->llen($subject));
+        self::assertTrue($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertTrue($locker3->isAcquired());
+
+        self::assertTrue($locker3->acquire($capabilities));
+
+        self::assertEquals(0, $redis->llen($subject));
+        self::assertTrue($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertTrue($locker3->isAcquired());
     }
 
     protected function setUp()
