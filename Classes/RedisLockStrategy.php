@@ -49,9 +49,19 @@ class RedisLockStrategy implements LockingStrategyInterface
     private $subject;
 
     /**
-     * @var int
+     * @var int Seconds the lock remains persistent
      */
-    private $ttl;
+    private $ttl = 3600;
+
+    /**
+     * @var boolean TRUE if lock is acquired
+     */
+    private $isAcquired = false;
+
+    /**
+     * @var int Seconds to wait for a lock
+     */
+    private $blTo = 60;
 
     /**
      * @inheritdoc
@@ -95,6 +105,14 @@ class RedisLockStrategy implements LockingStrategyInterface
         }
 
         $this->redis->select((int) $config['database']);
+
+        if (!$this->redis->exists($this->subject)) {
+
+            // initialize synchronization object,
+            // i.e. a simple list with some single random value
+            $this->redis->rPush($this->subject, uniqid());
+            $this->redis->expire($this->subject, $this->ttl);
+        }
     }
 
     /**
@@ -118,11 +136,23 @@ class RedisLockStrategy implements LockingStrategyInterface
      */
     public function acquire($mode = self::LOCK_CAPABILITY_EXCLUSIVE)
     {
-        if ($this->isAcquired()) {
+        if ($this->isAcquired) {
             return true;
         }
 
-        return $this->redis->set($this->subject, uniqid(), $this->ttl);
+        if ($mode & self::LOCK_CAPABILITY_NOBLOCK) {
+
+            // this does not block
+            $this->isAcquired = (bool) $this->redis->lPop($this->subject, $this->blTo);
+
+        } else {
+
+            // this blocks iff the list is empty
+            $this->isAcquired = (bool) $this->redis->blPop([$this->subject], $this->blTo);
+
+        }
+
+        return $this->isAcquired;
     }
 
     /**
@@ -130,7 +160,7 @@ class RedisLockStrategy implements LockingStrategyInterface
      */
     public function isAcquired()
     {
-        return $this->redis->exists($this->subject);
+        return $this->isAcquired;
     }
 
     /**
@@ -139,6 +169,7 @@ class RedisLockStrategy implements LockingStrategyInterface
     public function destroy()
     {
         $this->release();
+        $this->redis->del($this->subject);
     }
 
     /**
@@ -146,11 +177,13 @@ class RedisLockStrategy implements LockingStrategyInterface
      */
     public function release()
     {
-        if (!$this->isAcquired()) {
+        if (!$this->isAcquired) {
             return true;
         }
 
-        return $this->redis->del($this->subject) === 1;
+        $this->isAcquired = !$this->redis->rPush($this->subject, uniqid());
+
+        return !$this->isAcquired;
     }
 
 }
