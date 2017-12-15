@@ -51,6 +51,21 @@ class RedisLockStrategy implements LockingStrategyInterface
     private $subject;
 
     /**
+     * @var string The key used for the lock itself
+     */
+    private $name;
+
+    /**
+     * @var string The key used for the mutex, i.e. a list
+     */
+    private $mutex;
+
+    /**
+     * @var string The value used for the lock
+     */
+    private $value;
+
+    /**
      * @var boolean TRUE if lock is acquired
      */
     private $isAcquired = false;
@@ -97,7 +112,6 @@ class RedisLockStrategy implements LockingStrategyInterface
             $this->ttl = (int) $config['ttl'];
         }
 
-        $this->subject = $subject;
         $this->redis   = new \Redis();
         $this->redis->connect($config['host'], $port);
 
@@ -107,9 +121,12 @@ class RedisLockStrategy implements LockingStrategyInterface
 
         $this->redis->select((int) $config['database']);
 
-        if (!$this->redis->exists($this->subject)) {
-            $this->create();
-        }
+        $this->subject = $subject;
+        $this->name = sprintf('lock:name:%s', $subject);
+        $this->mutex = sprintf('lock:mutex:%s', $subject);
+        $this->value = uniqid();
+
+        $this->init();
     }
 
     /**
@@ -142,15 +159,17 @@ class RedisLockStrategy implements LockingStrategyInterface
             if ($mode & self::LOCK_CAPABILITY_NOBLOCK) {
 
                 // this does not block
-                $this->isAcquired = (bool) $this->redis->lPop($this->subject);
+                $this->isAcquired = $this->lock();
 
                 if (!$this->isAcquired) {
                     throw new LockAcquireWouldBlockException('could not acquire lock');
                 }
             } else {
 
-                // this blocks iff the list is empty
-                $this->isAcquired = (bool) $this->redis->blPop([$this->subject], $this->blTo);
+                // this blocks till the lock gets released
+                $this->wait();
+
+                $this->isAcquired = $this->lock();
 
                 if (!$this->isAcquired) {
                     throw new LockAcquireException('could not acquire lock');
@@ -177,7 +196,8 @@ class RedisLockStrategy implements LockingStrategyInterface
      */
     public function destroy()
     {
-        $this->redis->del($this->subject);
+        $this->redis->del($this->name);
+        $this->redis->del($this->mutex);
     }
 
     /**
@@ -189,29 +209,74 @@ class RedisLockStrategy implements LockingStrategyInterface
             return true;
         }
 
-        $this->isAcquired = !$this->create();
+        // discard return code
+        // we want to release the lock even in error case
+        // to get a more resilient behaviour
+        $this->unlockAndSignal();
+
+        $this->isAcquired = false;
 
         return !$this->isAcquired;
     }
 
     /**
-     * create synchronization object, i.e.
-     * a simple list with some single random value
+     * Initialize the synchronization object, i.e. a simple list with some random element
      *
-     * @return boolean TRUE on success
-     * @throws LockCreateException
+     * @return boolean TRUE on sucess, FALSE otherwise
      */
-    private function create()
+    private function init()
     {
-        if (!$this->redis->rPush($this->subject, uniqid())) {
-            throw new LockCreateException('could not create lock entry');
-        }
+        $script = '
+            if not redis.call("EXISTS", KEYS[1], KEYS[2]) == 2 then
+                return redis.call("RPUSH", KEYS[2], ARGV[1]) and redis.call("EXPIRE", KEYS[2], ARGV[2])
+            else
+                return 0
+            end
+        ';
+        return (bool) $this->redis->eval($script, [$this->name, $this->mutex, $this->value, $this->ttl], 2);
+    }
 
-        if (!$this->redis->expire($this->subject, $this->ttl)) {
-            throw new LockCreateException('could not set ttl to lock entry');
-        }
+    /**
+     * Try to get the lock
+     * N.B. this a is non-blocking operation
+     *
+     * @return boolean TRUE on success, FALSE otherwise
+     */
+    private function lock()
+    {
+        $this->value = uniqid();
 
-        return true;
+        // option NX: set value iff key is not present
+        return $this->redis->set($this->name, $this->value, ['NX', 'PX' => $this->ttl]);
+    }
+
+    /**
+     * Wait for the lock being released
+     * N.B. this a is blocking operation
+     *
+     * @return string The value, FALSE otherwise
+     */
+    private function wait()
+    {
+        $result = $this->redis->blPop([$this->mutex], $this->blTo);
+        return $result ? $result[1] : false;
+    }
+
+    /**
+     * Try to unlock the mutex and if succeeds, signal the waiting locks
+     *
+     * @return boolean TRUE on success, FALSE otherwise
+     */
+    private function unlockAndSignal()
+    {
+        $script = '
+            if redis.call("GET", KEYS[1]) == ARGV[1] and redis.call("DEL", KEYS[1]) == 1 then
+                return redis.call("RPUSH", KEYS[2], ARGV[1]) and redis.call("EXPIRE", KEYS[2], ARGV[2])
+            else
+                return 0
+            end
+        ';
+        return (bool) $this->redis->eval($script, [$this->name, $this->mutex, $this->value, $this->ttl], 2);
     }
 
 }
