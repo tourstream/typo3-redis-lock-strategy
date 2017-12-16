@@ -27,13 +27,13 @@ This extension uses the pecl extension [redis][redis-pecl-url].
 ## Usage
 
     $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
+            'database' => 0,
             'host'     => 'localhost',
             'port'     => 6379, //optional default 6379
-            'database' => $this->redisDatabase,
             'ttl'      => '360', //optional default 360
+            'blTo'     => '60', //optional default 60
             'auth'     => 'secret' //optional for secured redis db's
         ];
-
 
 ***
 
