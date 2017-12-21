@@ -73,12 +73,7 @@ class RedisLockStrategy implements LockingStrategyInterface
     /**
      * @var int Seconds the lock remains persistent
      */
-    private $ttl = 3600;
-
-    /**
-     * @var int Seconds to wait for a lock
-     */
-    private $blTo = 60;
+    private $ttl = 60;
 
     /**
      * @inheritdoc
@@ -109,10 +104,6 @@ class RedisLockStrategy implements LockingStrategyInterface
 
         if (\array_key_exists('ttl', $config)) {
             $this->ttl = (int) $config['ttl'];
-        }
-
-        if (\array_key_exists('blTo', $config)) {
-            $this->blTo = (int) $config['blTo'];
         }
 
         $this->redis   = new \Redis();
@@ -165,15 +156,10 @@ class RedisLockStrategy implements LockingStrategyInterface
                 // try to acquire the lock - blocking
                 // N.B. we do this in a loop because between
                 // wait() and lock() another process may acquire the lock
-                $start = time();
                 while (!$this->isAcquired = $this->lock()) {
 
-                    // calculate blocking timeout
-                    // N.B. minimum 1 second because 0 means infinite
-                    $blTo = max(1, $start + $this->blTo - time());
-
                     // this blocks till the lock gets released or timeout is reached
-                    if (!$this->wait($blTo)) {
+                    if (!$this->wait()) {
                         throw new LockAcquireException('could not acquire lock');
                     }
                 }
@@ -230,18 +216,18 @@ class RedisLockStrategy implements LockingStrategyInterface
         $this->value = uniqid();
 
         // option NX: set value iff key is not present
-        return (bool) $this->redis->set($this->name, $this->value, ['NX', 'PX' => $this->ttl]);
+        return (bool) $this->redis->set($this->name, $this->value, ['NX', 'EX' => $this->ttl]);
     }
 
     /**
      * Wait on the mutex for the lock being released
      * N.B. this a is blocking operation
      *
-     * @param int $blTo The blocking timeout in seconds
      * @return string The popped value, FALSE on timeout
      */
-    private function wait($blTo)
+    private function wait()
     {
+        $blTo = max(1, $this->redis->ttl($this->name));
         $result = $this->redis->blPop([$this->mutex], $blTo);
 
         return is_array($result) ? $result[1] : false;
