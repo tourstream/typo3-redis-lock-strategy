@@ -31,6 +31,7 @@ namespace Tourstream\RedisLockStrategy\Tests;
  ***************************************************************/
 
 use TYPO3\CMS\Core\Locking\LockFactory;
+use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -45,12 +46,14 @@ class RedisLockStrategyTest extends FunctionalTestCase
      * @var LockFactory
      */
     private $lockFactory;
+
     private $redisHost;
+
     private $redisDatabase;
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no configuration for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigIsMissing()
@@ -60,18 +63,19 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no configuration for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigIsNotAnArray()
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = 'test';
+
         $this->lockFactory->createLocker('test');
     }
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no host for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigHasNoHost()
@@ -83,7 +87,7 @@ class RedisLockStrategyTest extends FunctionalTestCase
 
     /**
      * @test
-     * @expectedException \TYPO3\CMS\Core\Locking\Exception
+     * @expectedException \TYPO3\CMS\Core\Locking\Exception\LockCreateException
      * @expectedExceptionMessage no database for redis lock strategy found
      */
     public function shouldThrowExceptionBecauseConfigHasNoDatabase()
@@ -100,32 +104,29 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndAcquireAExistingLock()
     {
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
-
-        $redis = $this->getRedisClient();
-
-        $redis->set($id, 'testvalue');
+        $locker = $this->getLocker($subject);
 
         self::assertTrue($locker->acquire());
     }
-
 
     /**
      * @test
      */
     public function shouldConnectAndAcquireALock()
     {
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
+        $name = sprintf('lock:name:%s', $subject);
 
-        self::assertTrue($locker->acquire());
+        $locker = $this->getLocker($subject);
 
         $redis = $this->getRedisClient();
 
-        self::assertTrue($redis->exists($id));
+        self::assertTrue($locker->acquire());
+
+        self::assertTrue($redis->exists($name));
     }
 
     /**
@@ -133,14 +134,11 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndCheckIfLockIsAcquired()
     {
+        $subject = uniqid();
 
-        $id = uniqid();
+        $locker = $this->getLocker($subject);
 
-        $locker = $this->getLocker($id);
-
-        $redis = $this->getRedisClient();
-
-        $redis->set($id, 'testvalue');
+        $locker->acquire();
 
         self::assertTrue($locker->isAcquired());
     }
@@ -150,33 +148,74 @@ class RedisLockStrategyTest extends FunctionalTestCase
      */
     public function shouldConnectAndDestroyALock()
     {
-        $id = uniqid();
+        $subject = uniqid();
 
-        $locker = $this->getLocker($id);
+        $name = sprintf('lock:name:%s', $subject);
+
+        $locker = $this->getLocker($subject);
 
         $redis = $this->getRedisClient();
 
-        $redis->set($id, 'testvalue');
-
         $locker->destroy();
 
-        self::assertFalse($redis->exists($id));
+        self::assertFalse($redis->exists($name));
     }
 
     /**
      * @test
      */
-    public function shouldConnectAndDestroyANotExistingLock()
+    public function shouldAcquireNonBlockingAndReleaseMoreLocks()
     {
-        $id = uniqid();
+        $subject = uniqid();
+        $capabilities = LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE | LockingStrategyInterface::LOCK_CAPABILITY_NOBLOCK;
 
-        $locker = $this->getLocker($id);
+        $locker1 = $this->getLocker($subject);
+        $locker2 = $this->getLocker($subject);
+        $locker3 = $this->getLocker($subject);
 
-        $redis = $this->getRedisClient();
+        self::assertTrue($locker1->acquire($capabilities));
+        self::expectException('\TYPO3\CMS\Core\Locking\Exception\LockAcquireWouldBlockException') && $locker2->acquire($capabilities);
+        self::expectException('\TYPO3\CMS\Core\Locking\Exception\LockAcquireWouldBlockException') && $locker3->acquire($capabilities);
 
-        $locker->destroy();
+        self::assertTrue($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
 
-        self::assertFalse($redis->exists($id));
+        self::assertTrue($locker1->release());
+
+        self::assertFalse($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker2->acquire($capabilities));
+
+        self::assertFalse($locker1->isAcquired());
+        self::assertTrue($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker3->release());
+
+        self::assertFalse($locker1->isAcquired());
+        self::assertTrue($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertFalse($locker1->acquire($capabilities));
+
+        self::assertFalse($locker1->isAcquired());
+        self::assertTrue($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker2->release());
+
+        self::assertFalse($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertFalse($locker3->isAcquired());
+
+        self::assertTrue($locker3->acquire($capabilities));
+
+        self::assertFalse($locker1->isAcquired());
+        self::assertFalse($locker2->isAcquired());
+        self::assertTrue($locker3->isAcquired());
     }
 
     protected function setUp()
@@ -218,7 +257,6 @@ class RedisLockStrategyTest extends FunctionalTestCase
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
             'host'     => $this->redisHost,
-            'port'     => 6379,
             'database' => $this->redisDatabase,
         ];
 

@@ -2,7 +2,7 @@
     "name": "tourstream/typo3-redis-lock-strategy",
     "type": "typo3-cms-extension",
     "license": "GPL-3.0+",
-    "version": "2.0.1",
+    "version": "3.0.1",
     "authors": [
         {
             "name": "Alexander Miehe",

@@ -8,7 +8,7 @@
 
 # TYPO3 Extension: redis lock strategy
 
-The extension adds a redis lock strategy with priority 100. So the redis lock will used instead of file base locking,
+The extension adds a redis lock strategy with priority 100. So the redis lock will be used instead of file base locking,
 especially useful in cluster with nfs.
 
 
@@ -28,12 +28,11 @@ This extension uses the pecl extension [redis][redis-pecl-url].
 
     $GLOBALS['TYPO3_CONF_VARS']['SYS']['redis_lock'] = [
             'host'     => 'localhost',
-            'port'     => 6379, //optional default 6379
-            'database' => $this->redisDatabase,
-            'ttl'      => '360', //optional default 360
-            'auth'     => 'secret' //optional for secured redis db's
+            'port'     => 6379,       // optional, default 6379
+            'database' => 0,          // optional, default 0
+            'ttl'      => '60',       // optional, default 60
+            'auth'     => 'secret'    // optional, for secured redis db's
         ];
-
 
 ***
 
