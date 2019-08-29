@@ -14,7 +14,7 @@ $EM_CONF[$_EXTKEY] = [
     'title'            => 'Tourstrean Redis Lock Strategy',
     'description'      => 'Set a Lock Strategy for Redis with priority 100',
     'category'         => 'fe',
-    'version'          => '3.0.1',
+    'version'          => '3.1.0',
     'state'            => 'stable',
     'uploadfolder'     => false,
     'createDirs'       => null,
@@ -26,7 +26,7 @@ $EM_CONF[$_EXTKEY] = [
         [
             'depends'   =>
                 [
-                    'typo3' => '8.6.1-8.7.99',
+                    'typo3' => '8.7.0-9.5.99',
                 ],
             'conflicts' =>
                 [
